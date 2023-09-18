@@ -7,7 +7,7 @@
              id="m1673508616278" name="" targetNamespace="http://www.activiti.org/test"
              typeLanguage="http://www.w3.org/2001/XMLSchema">
     <process id="EvectionProcess" isClosed="false" isExecutable="true" name="出差审批流程" processType="None">
-        <startEvent id="_2" name="发起出差申请"/>
+        <startEvent id="_2" name="发起请假申请"/>
         <userTask activiti:exclusive="true" id="manager_apply" name="经理审批">
             <extensionElements>
                 <activiti:taskListener event="assignment"
