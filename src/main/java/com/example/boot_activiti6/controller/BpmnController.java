@@ -1,33 +1,24 @@
 package com.example.boot_activiti6.controller;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
+import com.example.boot_activiti6.model.constant.ProcessConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.activiti.engine.*;
-import org.activiti.engine.history.HistoricActivityInstance;
-import org.activiti.engine.history.HistoricActivityInstanceQuery;
-import org.activiti.engine.history.HistoricProcessInstance;
-import org.activiti.engine.history.HistoricProcessInstanceQuery;
-import org.activiti.engine.repository.Deployment;
 import org.activiti.engine.repository.ProcessDefinition;
-import org.activiti.engine.repository.ProcessDefinitionQuery;
 import org.activiti.engine.runtime.ProcessInstance;
-import org.activiti.engine.task.Task;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Map;
-import java.util.zip.ZipInputStream;
 
 /**
  * @author zxb 2023/1/10 16:53
@@ -39,34 +30,11 @@ public class BpmnController {
     /**
      * 注入流程引擎
      */
-    @Autowired
+    @Resource
     private ProcessEngine processEngine;
 
-    /**
-     * 根据流程图模板创建一个流程实例并启动：创建一个出差审批流程
-     */
-    @PostMapping(path = "/start")
-    public String startProcessInstance(@RequestBody String variables) {
-        // 流程定义的key,通过这个key来启动流程实例,这个 key 是 act_re_procdef 表中的 KEY_ 字段
-        String processId = "EvectionProcess:7:60009";
-        // 获取 RuntimeService
-        RuntimeService runtimeService = processEngine.getRuntimeService();
-        // 使用流程定义的 key 【启动流程实例】，key对应 evection.bpmn 文件中id的属性值，使用key值启动，默认是按照最新版本的流程定义启动
-        Map<String, Object> applyVariablesMap = JSON.parseObject(variables, new TypeReference<Map<String, Object>>() {
-        });
-        ProcessInstance processInstance = runtimeService
-                // startProcessInstanceByKey方法还可以设置其他的参数，比如流程变量。
-                .startProcessInstanceById(processId, applyVariablesMap);
-        LocalDateTime localDateTime = LocalDateTime.now();
-        String deploymentTime = localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        // 创建的流程实例的 ID
-        String processInstanceId = processInstance.getId();
-        // 流程定义 ID 就是流程模板的 ID，也就是 act_re_procdef 表中的 ID
-        String processDefinitionId = processInstance.getProcessDefinitionId();
-        String activityId = processInstance.getActivityId();
-        log.warn("流程实例 ID 为 {}，流程定义 ID 为 {}，当前活动 ID 为 {}，启动时间为 {}", processInstanceId, processDefinitionId, activityId, deploymentTime);
-        return "success";
-    }
+    @Resource
+    private RepositoryService repositoryService;
 
     //***************************************** 获取流程定义相关资源 *****************************************//
 
@@ -79,7 +47,7 @@ public class BpmnController {
         // 创建一个资源查询
         ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
                 // 设置要获取哪个流程定义的资源
-                .processDefinitionKey("myProcess_1").singleResult();
+                .processDefinitionKey(ProcessConstant.PROCESS_DEF_KEY).singleResult();
         // 通过查出来的流程定义，获取部署 id
         String deploymentId = processDefinition.getDeploymentId();
         String bpmnFileName = processDefinition.getResourceName();
@@ -105,7 +73,7 @@ public class BpmnController {
         // 创建资源 service 类
         RepositoryService repositoryService = processEngine.getRepositoryService();
         // 根据流程定义 id 获取流程定义
-        ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionId("myProcess_1:1:4").singleResult();
+        ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionId(ProcessConstant.PROCESS_DEF_KEY).singleResult();
         // 获取部署 ID
         String deploymentId = processDefinition.getDeploymentId();
         // 获取 bpmn 对应的 png 图片名称

@@ -10,22 +10,32 @@
         <startEvent id="_2" name="发起出差申请"/>
         <userTask activiti:exclusive="true" id="manager_apply" name="经理审批">
             <extensionElements>
+                <activiti:taskListener event="create"
+                                       class="com.example.boot_activiti6.listener.usertask.UserTaskCreateListener"/>
                 <activiti:taskListener event="assignment"
-                                       class="com.example.boot_activiti6.listener.usertask.UserTaskListener"/>
+                                       class="com.example.boot_activiti6.listener.usertask.UserTaskAssignListener"/>
+                <activiti:taskListener event="complete"
+                                       class="com.example.boot_activiti6.listener.usertask.UserTaskCompleteListener"/>
             </extensionElements>
         </userTask>
         <userTask activiti:exclusive="true" id="master_apply" name="总经理审批">
             <extensionElements>
+                <activiti:taskListener event="create"
+                                       class="com.example.boot_activiti6.listener.usertask.UserTaskCreateListener"/>
                 <activiti:taskListener event="assignment"
-                                       class="com.example.boot_activiti6.listener.usertask.UserTaskListener"/>
-                <!--<activiti:taskListener event="assignment"
-                                       class="com.example.boot_activiti6.listener.UserTaskListener2"/>-->
+                                       class="com.example.boot_activiti6.listener.usertask.UserTaskAssignListener"/>
+                <activiti:taskListener event="complete"
+                                       class="com.example.boot_activiti6.listener.usertask.UserTaskCompleteListener"/>
             </extensionElements>
         </userTask>
         <userTask activiti:exclusive="true" id="finance_apply" name="财务审批">
             <extensionElements>
+                <activiti:taskListener event="create"
+                                       class="com.example.boot_activiti6.listener.usertask.UserTaskCreateListener"/>
                 <activiti:taskListener event="assignment"
-                                       class="com.example.boot_activiti6.listener.usertask.UserTaskListener"/>
+                                       class="com.example.boot_activiti6.listener.usertask.UserTaskAssignListener"/>
+                <activiti:taskListener event="complete"
+                                       class="com.example.boot_activiti6.listener.usertask.UserTaskCompleteListener"/>
             </extensionElements>
         </userTask>
         <endEvent id="_7" name="结束"/>

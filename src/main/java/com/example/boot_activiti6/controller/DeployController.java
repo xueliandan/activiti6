@@ -1,14 +1,25 @@
 package com.example.boot_activiti6.controller;
 
+import com.example.boot_activiti6.model.constant.ProcessConstant;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.activiti.bpmn.converter.BpmnXMLConverter;
+import org.activiti.bpmn.model.BpmnModel;
+import org.activiti.editor.language.json.converter.BpmnJsonConverter;
 import org.activiti.engine.ProcessEngine;
 import org.activiti.engine.RepositoryService;
 import org.activiti.engine.repository.Deployment;
+import org.activiti.engine.repository.Model;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -76,5 +87,47 @@ public class DeployController {
         String deploymentTime = localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         log.warn("部署 ID 为 {}，部署名称为 {}，部署时间为 {}", deployment.getId(), deployment.getName(), deploymentTime);
         return "success!";
+    }
+
+
+    /**
+     * 根据模型进行部署。需要将模型转换成 Bpmn 对象，然后将 editorJson 转成流，去部署。
+     * 部署的时候一定要切记，资源名称必须是 .bpmn20.xml 结尾
+     */
+    @GetMapping(path = "/deployFromModel")
+    public String deployFromModel(@RequestParam(value = "modelId") String modelId) throws IOException {
+        RepositoryService repositoryService = processEngine.getRepositoryService();
+        Model model = repositoryService.getModel(modelId);
+        String processName = model.getName();
+        // 一定一定一定要将部署的资源名称，也就是部署的资源名，改成 .bpmn20.xml 后缀结尾的
+        // 不然部署后，有部署记录，却没有流程定义记录
+        if (!StringUtils.endsWith(processName, ProcessConstant.BPMN_SUFFIX)) {
+            processName += ProcessConstant.BPMN_SUFFIX;
+        }
+        // 获取 editorSource 的字节数组转成 BpmnModel
+        byte[] modelEditorSourceBytes = repositoryService.getModelEditorSource(model.getId());
+        JsonNode editor = new ObjectMapper().readTree(modelEditorSourceBytes);
+        BpmnJsonConverter bpmnJsonConverter = new BpmnJsonConverter();
+        BpmnModel bpmnModel = bpmnJsonConverter.convertToBpmnModel(editor);
+        // 再将 bpmnModel 转成 xml 字节数组
+        BpmnXMLConverter bpmnXmlConverter = new BpmnXMLConverter();
+        byte[] bpmnBytes = bpmnXmlConverter.convertToXML(bpmnModel);
+        ByteArrayInputStream in = new ByteArrayInputStream(bpmnBytes);
+        // 可以通过字节进行部署，也可以通过输入流进行部署
+        Deployment deployment = repositoryService.createDeployment()
+                .name(model.getName())
+                .key(model.getKey())
+//                .addBytes(model.getName(), bpmnBytes)
+                .disableSchemaValidation()
+                .addInputStream(processName, in)
+                .deploy();
+        String deploymentId = deployment.getId();
+        log.info("ModelId:{} 部署成功, deploymentId:{}", modelId, deploymentId);
+
+        // 设置模型最新的部署 ID
+        model.setDeploymentId(deploymentId);
+        // 保存模型
+        repositoryService.saveModel(model);
+        return "success";
     }
 }
